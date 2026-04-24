@@ -1,0 +1,8 @@
+# node modules - we don't push these to github
+node_modules/
+
+# environment variables - sensitive stuff
+.env
+
+# logs
+*.log
