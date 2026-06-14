@@ -11,29 +11,39 @@ const Task = require("./models/Task");
 dotenv.config();
 
 const app = express();
-
-// Socket.io needs an HTTP server to bind to. Took me some time to realize app.listen isn't enough!
 const server = http.createServer(app);
 
+// ✅ Allowed frontend URL
+const FRONTEND_URL = process.env.FRONTEND_URL || "https://real-time-collabe.vercel.app";
+
+// ✅ CORS (IMPORTANT FIX)
+app.use(cors({
+  origin: FRONTEND_URL,
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
+
+app.use(express.json());
+
+// ✅ Socket.io setup (FIXED)
 const io = new Server(server, {
   cors: {
-    origin: "*", 
+    origin: FRONTEND_URL,
     methods: ["GET", "POST", "PUT", "DELETE"],
   },
 });
 
-app.use(cors()); 
-app.use(express.json()); 
-
+// ✅ Connect DB
 connectDB();
 
+// ✅ Routes
 app.get("/", (req, res) => {
-  res.send("Backend is running!");
+  res.send("Backend is running 🚀");
 });
 
 app.use("/api/tasks", taskRoutes);
 
-// --- Socket.io Real-Time Logic ---
+// ================= SOCKET LOGIC =================
 
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
@@ -42,24 +52,25 @@ io.on("connection", (socket) => {
     socket.join(roomId);
   });
 
+  // CREATE TASK
   socket.on("create-task", async (data) => {
     try {
-      const taskObj = new Task({
+      const task = new Task({
         title: data.title,
         description: data.description || "",
         status: data.status || "To Do",
         roomId: data.roomId,
       });
 
-      const savedTask = await taskObj.save();
-      
-      // Emit only to people in this room so we don't update other boards
+      const savedTask = await task.save();
+
       io.to(data.roomId).emit("task-created", savedTask);
     } catch (err) {
-      console.log("Socket create task error:", err.message);
+      console.log("Create error:", err.message);
     }
   });
 
+  // UPDATE TASK
   socket.on("update-task", async (data) => {
     try {
       const updatedTask = await Task.findByIdAndUpdate(
@@ -69,35 +80,38 @@ io.on("connection", (socket) => {
           description: data.description,
           status: data.status,
         },
-        { new: true } 
+        { new: true }
       );
 
       if (updatedTask) {
         io.to(data.roomId).emit("task-updated", updatedTask);
       }
     } catch (err) {
-      console.log("Socket update error:", err.message);
+      console.log("Update error:", err.message);
     }
   });
 
+  // DELETE TASK
   socket.on("delete-task", async (data) => {
     try {
-      const deletedTask = await Task.findByIdAndDelete(data._id);
+      const deleted = await Task.findByIdAndDelete(data._id);
 
-      if (deletedTask) {
+      if (deleted) {
         io.to(data.roomId).emit("task-deleted", data._id);
       }
     } catch (err) {
-      console.log("Socket delete error:", err.message);
+      console.log("Delete error:", err.message);
     }
   });
 
   socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id); 
+    console.log("User disconnected:", socket.id);
   });
 });
 
+// ✅ PORT (Render compatible)
 const PORT = process.env.PORT || 5000;
+
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
