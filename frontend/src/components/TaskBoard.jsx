@@ -12,7 +12,7 @@ function TaskBoard({ roomId }) {
     socket.emit("join-room", roomId);
 
     // Fetch existing tasks from the REST API when we first load
-    fetch(`http://localhost:5000/api/tasks/${roomId}`)
+    fetch(`${import.meta.env.VITE_API_URL}/api/tasks/${roomId}`)
       .then((res) => res.json())
       .then((data) => setTasks(data))
       .catch((err) => console.log("Error fetching tasks:", err));
