@@ -90,6 +90,6 @@ cd real-time-collaborative-task-board
 ---
 
 ## 👨‍💻 Author
-**Sai Prashanth**
-3rd-year B.Tech AI&DS Student
-Guru Nanak Institute of Technology (GNIT), Hyderabad
+**Ishan Jain**
+3rd-year B.Tech CSE Student
+Lakshmi Narain College of Technology(Bhopal)
